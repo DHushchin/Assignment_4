@@ -1,6 +1,7 @@
 ﻿#include <iostream>
 #include <fstream>
 #include <stdio.h>
+#include <string>
 
 using namespace std;
 
@@ -38,13 +39,14 @@ private:
 public:
     int32_t getWidth();
     int32_t getHeight();
-    void CopyImage(char* name1, char* name2);
+    void ReadHead(FILE* FileIn, FILE* FileOut, int extent, int ZeroPixels);
+    void ReadPixels(FILE* FileIn, FILE* FileOut, int ZeroPixels, int extent);
+    void ResizeImage(char* name1, char* name2, int extent);
 };
-
 
 int main(int argc, char* argv[]) {
     Image image;
-    image.CopyImage(argv[1], argv[2]);
+    image.ResizeImage(argv[1], argv[2], stoi(argv[3]));
     system("pause");
     return 0;
 }
@@ -57,31 +59,45 @@ int32_t Image::getHeight() {
     return Head.height;
 }
 
-void Image::CopyImage(char* name1, char* name2) {
-#pragma warning (disable : 4996)
-    FILE* infile = fopen(name1, "rb");
-#pragma warning (disable : 4996)
-    FILE* outfile = fopen(name2, "wb");
+void Image::ReadHead(FILE* FileIn, FILE* FileOut, int extent, int ZeroPixels) {
+    if (!FileIn) cout << "Can't open to read" << endl;
+    else fread(&Head, sizeof(Head), 1, FileIn);
 
-    if (!infile) {
-        cout << "Can't open to read" << endl;
-    }
-    else fread(&Head, sizeof(BMPHEAD), 1, infile);
-
-    if (!outfile) {
-        cout << "Can't open to write" << endl;
-    }
-    else fwrite(&Head, sizeof(BMPHEAD), 1, outfile);
+    Head.width *= extent;
+    Head.height *= extent;
+    //Head.biSizeImage = (Head.width * sizeof(Color) + ZeroPixels) * abs(Head.height);
+    //Head.filesize = sizeof(Head) + Head.biSizeImage;
 
 
-    for (int i = 0; i < getHeight(); i++) {
-        for (int j = 0; j < getWidth(); j++) {
+    if (!FileOut) cout << "Can't open to write" << endl;
+    else fwrite(&Head, sizeof(Head), 1, FileOut);
+}
 
-            fread(&Color, sizeof(PIXELDATA), 1, infile);
+void Image::ReadPixels(FILE* FileIn, FILE* FileOut, int ZeroPixels, int extent) {
+    for (int i = 0; i < abs(Head.height); i++) {
+        for (int j = 0; j < Head.width; j++) {
+            fread(&Color, sizeof(Color), 1, FileIn);
+            for (int l = 0; l < extent; l++)
+                fwrite(&Color, sizeof(Color), 1, FileOut);
 
-            fwrite(&Color, sizeof(PIXELDATA), 1, outfile);
+        }
+        fseek(FileIn, ZeroPixels, SEEK_CUR);
+        for (int k = 0; k < ZeroPixels; k++) {
+            fputc(0x00, FileOut);
         }
     }
-    fclose(infile);
-    fclose(outfile);
+}
+
+
+void Image::ResizeImage(char* name1, char* name2, int extent) {
+#pragma warning (disable : 4996)
+    FILE* FileIn = fopen(name1, "rb");
+#pragma warning (disable : 4996)
+    FILE* FileOut = fopen(name2, "wb");
+
+    int ZeroPixels = (4 - (Head.width * sizeof(PIXELDATA)) % 4) % 4;
+    ReadHead(FileIn, FileOut, extent, ZeroPixels);
+    ReadPixels(FileIn, FileOut, ZeroPixels, extent);
+    fclose(FileIn);
+    fclose(FileOut);
 }
