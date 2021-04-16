@@ -1,7 +1,6 @@
 ﻿#include <iostream>
 #include <fstream>
-#include <vector>
-#include <string>
+#include <stdio.h>
 
 using namespace std;
 
@@ -26,20 +25,42 @@ typedef struct {
 #pragma pack(pop)
 
 typedef struct {
-    int8_t redComponent;
-    int8_t greenComponent;
-    int8_t blueComponent;
+    int8_t redComp;
+    int8_t greenComp;
+    int8_t blueComp;
 } PIXELDATA;
 
 
-int main(int argc, char* argv[]) {
-    char* name1 = argv[1];
-    char* name2 = argv[2];
-    
+class Image {
+private:
     BMPHEAD Head;
-    #pragma warning (disable : 4996)
+    PIXELDATA Color;
+public:
+    int32_t getWidth();
+    int32_t getHeight();
+    void CopyImage(char* name1, char* name2);
+};
+
+
+int main(int argc, char* argv[]) {
+    Image image;
+    image.CopyImage(argv[1], argv[2]);
+    system("pause");
+    return 0;
+}
+
+int32_t Image::getWidth() {
+    return Head.width;
+}
+
+int32_t Image::getHeight() {
+    return Head.height;
+}
+
+void Image::CopyImage(char* name1, char* name2) {
+#pragma warning (disable : 4996)
     FILE* infile = fopen(name1, "rb");
-    #pragma warning (disable : 4996)
+#pragma warning (disable : 4996)
     FILE* outfile = fopen(name2, "wb");
 
     if (!infile) {
@@ -52,17 +73,15 @@ int main(int argc, char* argv[]) {
     }
     else fwrite(&Head, sizeof(BMPHEAD), 1, outfile);
 
-    PIXELDATA pixel;
-    for (int i = 0; i < Head.height; i++) {
-        for (int j = 0; j < Head.width; j++) {
 
-             fread(&pixel, sizeof(PIXELDATA), 1, infile);
+    for (int i = 0; i < getHeight(); i++) {
+        for (int j = 0; j < getWidth(); j++) {
 
-             fwrite(&pixel, sizeof(PIXELDATA), 1, outfile);
+            fread(&Color, sizeof(PIXELDATA), 1, infile);
+
+            fwrite(&Color, sizeof(PIXELDATA), 1, outfile);
         }
     }
     fclose(infile);
     fclose(outfile);
-    system("pause");
-    return 0;
 }
