@@ -65,9 +65,6 @@ void Image::ReadHead(FILE* FileIn, FILE* FileOut, int extent, int ZeroPixels) {
 
     Head.width *= extent;
     Head.height *= extent;
-    //Head.biSizeImage = (Head.width * sizeof(Color) + ZeroPixels) * abs(Head.height);
-    //Head.filesize = sizeof(Head) + Head.biSizeImage;
-
 
     if (!FileOut) cout << "Can't open to write" << endl;
     else fwrite(&Head, sizeof(Head), 1, FileOut);
@@ -75,16 +72,19 @@ void Image::ReadHead(FILE* FileIn, FILE* FileOut, int extent, int ZeroPixels) {
 
 void Image::ReadPixels(FILE* FileIn, FILE* FileOut, int ZeroPixels, int extent) {
     for (int i = 0; i < abs(Head.height); i++) {
-        for (int j = 0; j < Head.width; j++) {
-            fread(&Color, sizeof(Color), 1, FileIn);
-            for (int l = 0; l < extent; l++)
-                fwrite(&Color, sizeof(Color), 1, FileOut);
-
+        for (size_t m = 0; m < extent; m++) {
+            for (int j = 0; j < Head.width; j++) {
+                fread(&Color, sizeof(Color), 1, FileIn);
+                for (int l = 0; l < extent; l++)
+                    fwrite(&Color, sizeof(Color), 1, FileOut);
+            }
+            fseek(FileIn, ZeroPixels, SEEK_CUR);
+            for (int k = 0; k < ZeroPixels; k++) {
+                fputc(0x00, FileOut);
+            }
+            fseek(FileIn, -(Head.width * 3 + ZeroPixels), SEEK_CUR);
         }
-        fseek(FileIn, ZeroPixels, SEEK_CUR);
-        for (int k = 0; k < ZeroPixels; k++) {
-            fputc(0x00, FileOut);
-        }
+        fseek(FileIn, (Head.width * 3 + ZeroPixels), SEEK_CUR);
     }
 }
 
