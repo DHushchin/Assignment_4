@@ -95,9 +95,9 @@ void Image::ResizeImage(char* name1, char* name2, int extent) {
 #pragma warning (disable : 4996)
     FILE* FileOut = fopen(name2, "wb");
 
-    int ZeroPixels = (4 - (Head.width * sizeof(PIXELDATA)) % 4) % 4;
-    ReadHead(FileIn, FileOut, extent, ZeroPixels);
-    ReadPixels(FileIn, FileOut, ZeroPixels, extent);
+    int ZeroBytes = (4 - (Head.width * sizeof(PIXELDATA)) % 4) % 4;
+    ReadHead(FileIn, FileOut, extent, ZeroBytes);
+    ReadPixels(FileIn, FileOut, ZeroBytes, extent);
     fclose(FileIn);
     fclose(FileOut);
 }
