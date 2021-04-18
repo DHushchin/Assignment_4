@@ -6,8 +6,9 @@
 using namespace std;
 
 #pragma pack(1)
-typedef struct 
+class BMPHEAD
 {
+private:
     int8_t id[2];            // Завжди дві літери 'B' і 'M'
     int32_t filesize;        // Розмір файла в байтах +
     int16_t reserved[2];     // 0, 0
@@ -23,16 +24,21 @@ typedef struct
     int32_t biYPelsPerMeter; // Те саме, по висоті
     int32_t biClrUsed;       // Для індексованих зображень, можна поставити 0L
     int32_t biClrImportant;  // Те саме
-} BMPHEAD;
-#pragma pack(pop)
+public:
+    int32_t getWidth();
+    int32_t getHeight();
+    int32_t GetFilesize();
+    void Extent(int extent);
+} ;
 
-typedef struct 
+
+class PIXELDATA
 {
     int8_t redComp;
     int8_t greenComp;
     int8_t blueComp;
-} PIXELDATA;
-
+};
+#pragma pack(pop)
 
 class Image 
 {
@@ -40,10 +46,8 @@ private:
     BMPHEAD Head;
     PIXELDATA Color;
 public:
-    int32_t getWidth();
-    int32_t getHeight();
-    void ReadHead(FILE* FileIn, FILE* FileOut, int extent, int ZeroBytes);
-    void ReadPixels(FILE* FileIn, FILE* FileOut, int ZeroBytes, int extent);
+    void ReadHead(FILE* FileIn, FILE* FileOut, int extent);
+    void ReadPixels(FILE* FileIn, FILE* FileOut, int extent);
     void ResizeImage(char* name1, char* name2, int extent);
 };
 
@@ -55,49 +59,60 @@ int main(int argc, char* argv[])
     return 0;
 }
 
-int32_t Image::getWidth() 
+int32_t BMPHEAD::getWidth()
 {
-    return Head.width;
+    return width;
 }
 
-int32_t Image::getHeight() 
+int32_t BMPHEAD::getHeight()
 {
-    return Head.height;
+    return height;
 }
 
-void Image::ReadHead(FILE* FileIn, FILE* FileOut, int extent, int ZeroBytes) 
+int32_t BMPHEAD::GetFilesize()
+{
+    return filesize;
+}
+
+void BMPHEAD::Extent(int extent) {
+    int ZeroBytes = (4 - (width * sizeof(PIXELDATA)) % 4) % 4;
+    width *= extent;
+    height *= extent;
+    filesize = 54 + height * width * 3 + ZeroBytes * height;
+}
+
+void Image::ReadHead(FILE* FileIn, FILE* FileOut, int extent) 
 {
     if (!FileIn) cout << "Can't open to read" << endl;
     else fread(&Head, sizeof(Head), 1, FileIn);
-
-    Head.width *= extent;
-    Head.height *= extent;
-
+    Head.Extent(extent);
     if (!FileOut) cout << "Can't open to write" << endl;
     else fwrite(&Head, sizeof(Head), 1, FileOut);
 }
 
-void Image::ReadPixels(FILE* FileIn, FILE* FileOut, int ZeroBytes, int extent) 
+void Image::ReadPixels(FILE* FileIn, FILE* FileOut, int extent) 
 {
-    for (int i = 0; i < abs(Head.height); i++) 
+    int ZeroBytes = (4 - (Head.getWidth() * sizeof(PIXELDATA)) % 4) % 4;
+    /*
+    for (int i = 0; i < abs(Head.getHeight()); i++)
     {
-        for (size_t m = 0; m < extent; m++) 
-        {
-            for (int j = 0; j < Head.width; j++) 
+            for (int j = 0; j < Head.getWidth(); j++)
             {
                 fread(&Color, sizeof(Color), 1, FileIn);
-                for (int l = 0; l < extent; l++)
-                    fwrite(&Color, sizeof(Color), 1, FileOut);
             }
             fseek(FileIn, ZeroBytes, SEEK_CUR);
+            for (int j = 0; j < Head.getWidth(); j++)
+            {
+                fwrite(&Color, sizeof(Color), 1, FileOut);
+            }
             for (int k = 0; k < ZeroBytes; k++) 
             {
                 fputc(0x00, FileOut);
             }
-            fseek(FileIn, -(Head.width * 3 + ZeroBytes), SEEK_CUR);
-        }
-        fseek(FileIn, (Head.width * 3 + ZeroBytes), SEEK_CUR);
+            //fseek(FileIn, -(Head.getWidth() * 3 + ZeroBytes), SEEK_CUR);
+       // fseek(FileIn, (Head.getWidth() * 3 + ZeroBytes), SEEK_CUR);       
     }
+    */
 }
 
 
@@ -107,10 +122,8 @@ void Image::ResizeImage(char* name1, char* name2, int extent)
     FILE* FileIn = fopen(name1, "rb");
 #pragma warning (disable : 4996)
     FILE* FileOut = fopen(name2, "wb");
-
-    int ZeroBytes = (4 - (Head.width * sizeof(PIXELDATA)) % 4) % 4;
-    ReadHead(FileIn, FileOut, extent, ZeroBytes);
-    ReadPixels(FileIn, FileOut, ZeroBytes, extent);
+    ReadHead(FileIn, FileOut, extent);
+    ReadPixels(FileIn, FileOut, extent);
     fclose(FileIn);
     fclose(FileOut);
 }
