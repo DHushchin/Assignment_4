@@ -39,9 +39,11 @@ class Image
 private:
     BMPHEAD Head;
     PIXELDATA Color;
+    PIXELDATA** PixelM;
 public:
     int32_t getWidth();
     int32_t getHeight();
+    void ConvertToMatrix(FILE* FileIn, int& ZeroBytes);
     void ReadHead(FILE* FileIn, FILE* FileOut, int extent, int ZeroBytes);
     void ReadPixels(FILE* FileIn, FILE* FileOut, int ZeroBytes, int extent);
     void ResizeImage(char* name1, char* name2, int extent);
@@ -50,7 +52,23 @@ public:
 int main(int argc, char* argv[]) 
 {
     Image image;
-    image.ResizeImage(argv[1], argv[2], stoi(argv[3]));
+    string str;
+    /*double size = atof(argv[3]);
+    if (size == (int)size)
+    {
+        image.ResizeImage(argv[1], argv[2], stoi(argv[3]));
+    }
+    else
+    {
+
+    }*/
+
+    // for test
+    char name1[] = { 'b','m','p','.','b','m','p', '\0' };
+    char name2[] = { 'b','m','p', '1','.','b','m','p', '\0' } ;
+    int name3 = 2;
+    image.ResizeImage(name1, name2, name3);
+
     system("pause");
     return 0;
 }
@@ -63,6 +81,19 @@ int32_t Image::getWidth()
 int32_t Image::getHeight() 
 {
     return Head.height;
+}
+
+void Image::ConvertToMatrix(FILE* FileIn, int& ZeroBytes)
+{
+    PixelM = new PIXELDATA* [Head.height];
+    for (size_t i = 0; i < Head.height; i++) 
+    {
+    PixelM[i] = new PIXELDATA[Head.width];
+        for (size_t j = 0; j < Head.width; j++) {
+            fread(&PixelM[i][j], sizeof(PIXELDATA), 1, FileIn);
+        }
+        fseek(FileIn, ZeroBytes, SEEK_CUR);
+    }
 }
 
 void Image::ReadHead(FILE* FileIn, FILE* FileOut, int extent, int ZeroBytes) 
@@ -110,7 +141,10 @@ void Image::ResizeImage(char* name1, char* name2, int extent)
 
     int ZeroBytes = (4 - (Head.width * sizeof(PIXELDATA)) % 4) % 4;
     ReadHead(FileIn, FileOut, extent, ZeroBytes);
+    //fseek(FileIn, 0, SEEK_SET);
+    ConvertToMatrix(FileIn, ZeroBytes);
     ReadPixels(FileIn, FileOut, ZeroBytes, extent);
     fclose(FileIn);
     fclose(FileOut);
 }
+
