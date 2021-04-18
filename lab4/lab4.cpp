@@ -30,7 +30,7 @@ public:
     int32_t GetFilesize();
     void Extent(int extent);
 } ;
-
+#pragma pack(pop)
 
 class PIXELDATA
 {
@@ -38,23 +38,43 @@ class PIXELDATA
     int8_t greenComp;
     int8_t blueComp;
 };
-#pragma pack(pop)
+
 
 class Image 
 {
 private:
     BMPHEAD Head;
     PIXELDATA Color;
+    PIXELDATA** PixelM;
 public:
     void ReadHead(FILE* FileIn, FILE* FileOut, int extent);
     void ReadPixels(FILE* FileIn, FILE* FileOut, int extent);
     void ResizeImage(char* name1, char* name2, int extent);
+    void ConvertToMatrix(FILE* FileIn);
+    void WritePixels(FILE* FileIn, FILE* FileOut, int extent);
 };
 
 int main(int argc, char* argv[]) 
 {
     Image image;
-    image.ResizeImage(argv[1], argv[2], stoi(argv[3]));
+    string str;
+    double size = atof(argv[3]);
+    if (size == (int)size)
+    {
+        image.ResizeImage(argv[1], argv[2], stoi(argv[3]));
+    }
+    else
+    {
+        // это для интерполяции
+
+    }
+
+    // for test
+    /*char name1[] = { 'b','m','p','.','b','m','p', '\0' };
+    char name2[] = { 'b','m','p', '1','.','b','m','p', '\0' } ;
+    int name3 = 2;
+    image.ResizeImage(name1, name2, name3);*/
+
     system("pause");
     return 0;
 }
@@ -80,6 +100,8 @@ void BMPHEAD::Extent(int extent) {
     height *= extent;
     filesize = 54 + height * width * 3 + ZeroBytes * height;
 }
+
+
 
 void Image::ReadHead(FILE* FileIn, FILE* FileOut, int extent) 
 {
@@ -115,6 +137,36 @@ void Image::ReadPixels(FILE* FileIn, FILE* FileOut, int extent)
     */
 }
 
+void Image::ConvertToMatrix(FILE* FileIn)
+{
+    int ZeroBytes = (4 - (Head.getWidth() * sizeof(PIXELDATA)) % 4) % 4;
+    PixelM = new PIXELDATA*[Head.getHeight()];
+    for (size_t i = 0; i < Head.getHeight(); i++)
+    {
+        PixelM[i] = new PIXELDATA[Head.getWidth()];
+        for (size_t j = 0; j < Head.getWidth(); j++) {
+            fread(&PixelM[i][j], sizeof(PIXELDATA), 1, FileIn);
+        }
+        fseek(FileIn, ZeroBytes, SEEK_CUR);
+    }
+}
+
+void Image::WritePixels(FILE* FileIn, FILE* FileOut, int extent)
+{
+    int ZeroBytes = (4 - (Head.getWidth() * sizeof(PIXELDATA)) % 4) % 4;
+    for (int i = 0; i < Head.getHeight(); i++)
+    {
+        for (int j = 0; j < Head.getWidth(); j++) 
+        {
+            fwrite(&PixelM[i / extent][j / extent], sizeof(PIXELDATA), 1, FileOut);
+        }
+        for (int k = 0; k < ZeroBytes; k++) 
+        {
+            fputc(0x00, FileOut);
+        }
+    }
+}
+
 
 void Image::ResizeImage(char* name1, char* name2, int extent) 
 {
@@ -122,8 +174,13 @@ void Image::ResizeImage(char* name1, char* name2, int extent)
     FILE* FileIn = fopen(name1, "rb");
 #pragma warning (disable : 4996)
     FILE* FileOut = fopen(name2, "wb");
+
+
     ReadHead(FileIn, FileOut, extent);
-    ReadPixels(FileIn, FileOut, extent);
+    //ReadPixels(FileIn, FileOut, extent);
+    ConvertToMatrix(FileIn);
+    WritePixels(FileIn, FileOut, extent);
     fclose(FileIn);
     fclose(FileOut);
 }
+
