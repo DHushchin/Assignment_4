@@ -47,27 +47,29 @@ public:
     void ReadHead(FILE* FileIn, FILE* FileOut, int extent, int ZeroBytes);
     void ReadPixels(FILE* FileIn, FILE* FileOut, int ZeroBytes, int extent);
     void ResizeImage(char* name1, char* name2, int extent);
+    void WritePixels(FILE* FileIn, FILE* FileOut, int ZeroBytes, int extent);
 };
 
 int main(int argc, char* argv[]) 
 {
     Image image;
     string str;
-    /*double size = atof(argv[3]);
+    double size = atof(argv[3]);
     if (size == (int)size)
     {
         image.ResizeImage(argv[1], argv[2], stoi(argv[3]));
     }
     else
     {
+        // это для интерполяции
 
-    }*/
+    }
 
     // for test
-    char name1[] = { 'b','m','p','.','b','m','p', '\0' };
+    /*char name1[] = { 'b','m','p','.','b','m','p', '\0' };
     char name2[] = { 'b','m','p', '1','.','b','m','p', '\0' } ;
     int name3 = 2;
-    image.ResizeImage(name1, name2, name3);
+    image.ResizeImage(name1, name2, name3);*/
 
     system("pause");
     return 0;
@@ -131,6 +133,21 @@ void Image::ReadPixels(FILE* FileIn, FILE* FileOut, int ZeroBytes, int extent)
     }
 }
 
+void Image::WritePixels(FILE* FileIn, FILE* FileOut, int ZeroBytes, int extent)
+{
+    for (size_t i = 0; i < Head.height; i++) 
+    {
+        for (size_t j = 0; j < Head.width; j++) 
+        {
+            fwrite(&PixelM[i / extent][j / extent], sizeof(PIXELDATA), 1, FileOut);
+        }
+        for (size_t k = 0; k < ZeroBytes; k++) 
+        {
+            fputc(0x00, FileOut);
+        }
+    }
+}
+
 
 void Image::ResizeImage(char* name1, char* name2, int extent) 
 {
@@ -143,7 +160,8 @@ void Image::ResizeImage(char* name1, char* name2, int extent)
     ReadHead(FileIn, FileOut, extent, ZeroBytes);
     //fseek(FileIn, 0, SEEK_SET);
     ConvertToMatrix(FileIn, ZeroBytes);
-    ReadPixels(FileIn, FileOut, ZeroBytes, extent);
+    //ReadPixels(FileIn, FileOut, ZeroBytes, extent);
+    WritePixels(FileIn, FileOut, ZeroBytes, extent);
     fclose(FileIn);
     fclose(FileOut);
 }
