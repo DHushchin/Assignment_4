@@ -6,7 +6,7 @@
 using namespace std;
 
 #pragma pack(1)
-typedef struct 
+typedef struct
 {
     int8_t id[2];            // Завжди дві літери 'B' і 'M'
     int32_t filesize;        // Розмір файла в байтах +
@@ -26,7 +26,7 @@ typedef struct
 } BMPHEAD;
 #pragma pack(pop)
 
-typedef struct 
+typedef struct
 {
     int8_t redComp;
     int8_t greenComp;
@@ -34,7 +34,7 @@ typedef struct
 } PIXELDATA;
 
 
-class Image 
+class Image
 {
 private:
     BMPHEAD Head;
@@ -47,7 +47,7 @@ public:
     void ResizeImage(char* name1, char* name2, int extent);
 };
 
-int main(int argc, char* argv[]) 
+int main(int argc, char* argv[])
 {
     Image image;
     image.ResizeImage(argv[1], argv[2], stoi(argv[3]));
@@ -55,42 +55,45 @@ int main(int argc, char* argv[])
     return 0;
 }
 
-int32_t Image::getWidth() 
+int32_t Image::getWidth()
 {
     return Head.width;
 }
 
-int32_t Image::getHeight() 
+int32_t Image::getHeight()
 {
     return Head.height;
 }
 
-void Image::ReadHead(FILE* FileIn, FILE* FileOut, int extent, int ZeroBytes) 
+void Image::ReadHead(FILE* FileIn, FILE* FileOut, int extent, int ZeroBytes)
 {
     if (!FileIn) cout << "Can't open to read" << endl;
     else fread(&Head, sizeof(Head), 1, FileIn);
 
     Head.width *= extent;
     Head.height *= extent;
-
+    Head.biSizeImage = 54 + Head.height * Head.width * 3 + ZeroBytes * Head.height;
     if (!FileOut) cout << "Can't open to write" << endl;
     else fwrite(&Head, sizeof(Head), 1, FileOut);
 }
 
-void Image::ReadPixels(FILE* FileIn, FILE* FileOut, int ZeroBytes, int extent) 
+
+void Image::ReadPixels(FILE* FileIn, FILE* FileOut, int ZeroBytes, int extent)
 {
-    for (int i = 0; i < abs(Head.height); i++) 
+    for (int i = 0; i < abs(Head.height); i++)
     {
-        for (size_t m = 0; m < extent; m++) 
+        for (size_t m = 0; m < extent; m++)
         {
-            for (int j = 0; j < Head.width; j++) 
+            for (int j = 0; j < Head.width; j++)
             {
                 fread(&Color, sizeof(Color), 1, FileIn);
-                for (int l = 0; l < extent; l++)
+                
+                for (int l = 0; l < extent; l++) {
                     fwrite(&Color, sizeof(Color), 1, FileOut);
+                }
             }
             fseek(FileIn, ZeroBytes, SEEK_CUR);
-            for (int k = 0; k < ZeroBytes; k++) 
+            for (int k = 0; k < ZeroBytes; k++)
             {
                 fputc(0x00, FileOut);
             }
@@ -101,14 +104,14 @@ void Image::ReadPixels(FILE* FileIn, FILE* FileOut, int ZeroBytes, int extent)
 }
 
 
-void Image::ResizeImage(char* name1, char* name2, int extent) 
+void Image::ResizeImage(char* name1, char* name2, int extent)
 {
 #pragma warning (disable : 4996)
     FILE* FileIn = fopen(name1, "rb");
 #pragma warning (disable : 4996)
     FILE* FileOut = fopen(name2, "wb");
-
-    int ZeroBytes = (4 - (Head.width * sizeof(PIXELDATA)) % 4) % 4;
+    int ZeroBytes;
+    for (ZeroBytes = 0; (Head.width + ZeroBytes) % 4 != 0; ++ZeroBytes);
     ReadHead(FileIn, FileOut, extent, ZeroBytes);
     ReadPixels(FileIn, FileOut, ZeroBytes, extent);
     fclose(FileIn);
