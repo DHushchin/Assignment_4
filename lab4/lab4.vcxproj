@@ -139,7 +139,15 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="BMPHEAD.cpp" />
+    <ClCompile Include="Image.cpp" />
     <ClCompile Include="lab4.cpp" />
+    <ClCompile Include="PIXELDATA.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="BMPHEAD.hpp" />
+    <ClInclude Include="Image.hpp" />
+    <ClInclude Include="PIXELDATA.hpp" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
