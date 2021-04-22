@@ -39,8 +39,8 @@ void Image::ReadPixels(double extent, char* name1, PIXELDATA** InitialMatrix) {
     ifstream FileIn(name1, ios::in | ios::binary);
     int ZeroBytes = 4 - ((Head.getWidth() * 3) % 4);
     FileIn.seekg(54, ios::beg);
-    for (int i = 0; i < Head.getHeight(); i++) {
-        for (int j = 0; j < Head.getWidth(); j++) {
+    for (int i = 0; i < Head.getHeight()/extent; i++) {
+        for (int j = 0; j < Head.getWidth()/extent; j++) {
             if (!FileIn.is_open()) cout << "Can't open to read ReadPixels 1" << endl;
             else FileIn.read((char*)&InitialMatrix[i][j], sizeof(PIXELDATA));
         }
@@ -53,7 +53,7 @@ void Image::ReadPixels(double extent, char* name1, PIXELDATA** InitialMatrix) {
 
 
 PIXELDATA** Image::Interpolation(PIXELDATA** InitialMatrix, double extent) {
-    PIXELDATA** ResultMatrix = CreateMatrix(Head.getHeight() * extent, Head.getWidth() * extent);
+    PIXELDATA** ResultMatrix = CreateMatrix(Head.getHeight(), Head.getWidth());
 
     for (int i = 0; i < Head.getWidth(); i++) {
         for (int j = 0; j < Head.getHeight() - 1; j++) {
@@ -117,7 +117,7 @@ void Image::WritePixels(PIXELDATA** ResultMatrix, char* name2) {
 
 
 void Image::ProcessPixels(double extent, char* name1, char* name2) {
-    PIXELDATA** InitialMatrix = CreateMatrix(Head.getHeight(), Head.getWidth());
+    PIXELDATA** InitialMatrix = CreateMatrix(Head.getHeight()/extent, Head.getWidth()/extent);
     ReadPixels(extent, name1, InitialMatrix);
     PIXELDATA** ResultMatrix = Interpolation(InitialMatrix, extent);
     WritePixels(ResultMatrix, name2);
