@@ -5,23 +5,10 @@
 #include <iostream>
 using namespace std;
 
-void Image::ProcessHead(double extent, char* name1, char* name2) {
-    ifstream FileIn(name1, ios::in | ios::binary);
-    ofstream FileOut(name2, ios::out | ios::binary);
-    if (!FileIn) cout << "Can't open to read ProcessHead 1" << endl;
-    else FileIn.read((char*)&Head, sizeof(Head));
-    Head.setWidth(extent);
-    Head.setHeight(extent);
-    Head.setFilesize(4 - (Head.getWidth() % 4));
-    if (!FileOut) cout << "Can't open to write ProcessHead 2" << endl;
-    else FileOut.write((char*)&Head, sizeof(Head));
-    FileIn.close();
-    FileOut.close();
-}
 
 
-void Image::ResizeImage(char* name1, char* name2, double extent) {
-    ProcessHead(extent, name1, name2);
+void Image::ResizeImage(string name1, string name2, double extent) {
+    Head.ProcessHead(extent, name1, name2);
     ProcessPixels(extent, name1, name2);
 }
 
@@ -34,7 +21,7 @@ PIXELDATA** Image::CreateMatrix(int32_t height, int32_t width) {
 }
 
 
-void Image::ReadPixels(double extent, char* name1, PIXELDATA** InitialMatrix) {
+void Image::ReadPixels(double extent, string name1, PIXELDATA** InitialMatrix) {
 
     ifstream FileIn(name1, ios::in | ios::binary);
     int ZeroBytes = 4 - ((Head.getWidth() * 3) % 4);
@@ -98,7 +85,7 @@ PIXELDATA** Image::Interpolation(PIXELDATA** InitialMatrix, double extent) {
 }
 
 
-void Image::WritePixels(PIXELDATA** ResultMatrix, char* name2) {
+void Image::WritePixels(PIXELDATA** ResultMatrix, string name2) {
     ofstream FileOut(name2, ios::out | ios::binary | ios::app);
     int ZeroBytes = 4 - ((Head.getWidth() * 3) % 4);
     for (int i = 0; i < Head.getHeight(); i++) {
@@ -116,7 +103,7 @@ void Image::WritePixels(PIXELDATA** ResultMatrix, char* name2) {
 }
 
 
-void Image::ProcessPixels(double extent, char* name1, char* name2) {
+void Image::ProcessPixels(double extent, string name1, string name2) {
     PIXELDATA** InitialMatrix = CreateMatrix(Head.getHeight()/extent, Head.getWidth()/extent);
     ReadPixels(extent, name1, InitialMatrix);
     PIXELDATA** ResultMatrix = Interpolation(InitialMatrix, extent);

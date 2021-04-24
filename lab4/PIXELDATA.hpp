@@ -8,6 +8,11 @@ private:
     uint8_t green;
     uint8_t blue;
 public:
+    PIXELDATA() {
+        red = 0;
+        green = 0;
+        blue = 0;
+    }
     uint8_t getRed();
     uint8_t getGreen();
     uint8_t getBlue();

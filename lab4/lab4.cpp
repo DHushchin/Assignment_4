@@ -4,9 +4,12 @@
 
 using namespace std;
 
-int main(int argc, char* argv[]) {
+int main() {
     Image image;
-    image.ResizeImage(argv[1], argv[2], stod(argv[3]));
+    string name1 = "test.bmp";
+    string name2 = "new.bmp";
+    double ext = 2.0;
+    image.ResizeImage(name1, name2, ext);
     system("pause");
     return 0;
 }

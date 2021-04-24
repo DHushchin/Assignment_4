@@ -1,14 +1,16 @@
 #pragma once
 #include <cstdint>
-
+#include <string>
+#include <fstream>
+#include <iostream>
 using namespace std;
 
 #pragma pack(push, 1)
 class BMPHEAD {
-private:
+public:
     int8_t id[2];            // Завжди дві літери 'B' і 'M'
     int32_t filesize;        // Розмір файла в байтах +
-    int16_t reserved[2];     // 0, 0
+    int16_t reserved[2];
     int32_t headersize;      // 54L для 24-бітних зображень
     int32_t infoSize;        // 40L для 24-бітних зображень
     int32_t width;           // ширина зображення в пікселях +
@@ -27,5 +29,8 @@ public:
     void setWidth(double extent);
     void setHeight(double extent);
     void setFilesize(int ZeroBytes);
+    BMPHEAD(const BMPHEAD& h);
+    void ProcessHead(double extent, string name1, string name2);
+    BMPHEAD();
 };
 #pragma pack(pop)
