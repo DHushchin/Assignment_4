@@ -12,128 +12,130 @@ void Image::ResizeImage(string name1, string name2, int extent) {
 }
 
 
-PIXELDATA** Image::CreateMatrix(int height, int width) {
-    PIXELDATA** Matrix = new PIXELDATA*[height];
-    for (int i = 0; i < height; i++) {
-        Matrix[i] = new PIXELDATA[width];
-    }
-    return Matrix;
+void Image::ProcessPixels(int extent, string name1, string name2) {
+    readFromFile(name1);
+    enlargeBImage(extent);
+    writeToFile(name2);
 }
 
 
-void Image::ReadPixels(int extent, string name1, PIXELDATA** InitialMatrix) {
 
-    ifstream FileIn(name1, ios::in | ios::binary);
-    int ZeroBytes = (4 - Head.getWidth() * sizeof(PIXELDATA) % 4) % 4;
-    FileIn.seekg(54, ios::beg);
-    for (int i = 0; i < Head.getHeight(); i++) {
-        for (int j = 0; j < Head.getWidth(); j++) {
-            if (!FileIn.is_open()) cout << "Can't open to read ReadPixels 1" << endl;
-            else FileIn.read((char*)&InitialMatrix[i][j], sizeof(PIXELDATA));
+void Image::readFromFile(string address) {
+    //Создаем массив, в который будем заносить информацию о пикселях
+    this->createADataArray();
+
+    //Открытие файла и пропуск Header'а
+    ifstream file(address, ios::in | ios::binary);
+    file.seekg(54, ios::beg);
+
+    //Поочередно обрабатываем каждый пиксель
+    long proceeded_pixels = 0;
+    int delta = 4 - ((Head.width * 3) % 4);
+    for (int counter = 0; counter < Head.height; ++counter) {
+        this->readAline(file, proceeded_pixels, delta);
+    }
+
+    //Закрытие файла
+    file.close();
+}
+
+//TODO: Возможно, стоит обьединить с readAFile
+void Image::readAline(ifstream& file, long& proceeded_pixels, int delta) {
+    for (int counter = 0; counter < Head.width; ++counter) {
+
+        //Чтение цвета пикселя
+        uint8_t red;
+        file.read((char*)&red, sizeof(uint8_t));
+
+        uint8_t green;
+        file.read((char*)&green, sizeof(uint8_t));
+
+        uint8_t blue;
+        file.read((char*)&blue, sizeof(uint8_t));
+
+        //Запись информации о пикселе в массив
+        data[proceeded_pixels] = PIXELDATA(red, green, blue);
+        proceeded_pixels++;
+    }
+
+    long tmp;
+    file.read((char*)&tmp, delta);
+}
+
+void Image::writeToFile(const string& address) const {
+    int delta = 4 - ((Head.width * 3) % 4);
+    ofstream file(address, ios::out | ios::binary | ios::app);
+    long proceeded_pixels = 0;
+    for (int i = 0; i < Head.height; i++) {
+        this->writeLine(file, proceeded_pixels);
+        for (int j = 0; j < delta; j++) {
+            uint8_t zero = 0;
+            file.write((char*)&zero, sizeof(uint8_t));
         }
-        long tmp;
-        if (!FileIn.is_open()) cout << "Can't open to read ReadPixels 2" << endl;
-        else FileIn.read((char*)&tmp, ZeroBytes);
     }
-    FileIn.close();
+    file.close();
+}
+
+void Image::writeLine(ofstream& file, long& proceeded_pixels) const {
+    for (int counter = 0; counter < Head.width; ++counter) {
+        //Запись цвета пикселя
+        uint8_t red = data[proceeded_pixels].red;
+        file.write((char*)&red, sizeof(uint8_t));
+        uint8_t green = data[proceeded_pixels].green;
+        file.write((char*)&green, sizeof(uint8_t));
+        uint8_t blue = data[proceeded_pixels].blue;
+        file.write((char*)&blue, sizeof(uint8_t));
+        proceeded_pixels++;
+    }
 }
 
 
-void Image::Interpolation(PIXELDATA** InitialMatrix, int extent, PIXELDATA** ResultMatrix) {
+void Image::enlargeBImage(double coef) {
+    int newWidth = (int)(coef * Head.width);
+    int newHeight = (int)(coef * Head.height);
 
+    PIXELDATA* newImage = new PIXELDATA[newWidth * newHeight];
+    for (int x = 0; x < newWidth; x++) {
+        for (int y = 0; y < newHeight - 1; y++) {
 
-    for (int i = 0; i < Head.getWidth() - 1; i++) {
-        for (int j = 0; j < Head.getHeight() - 1; j++) {
+            double xDouble = (x / coef);
+            double yDouble = (y / coef);
 
-            double i_new = (i / extent);
-            double j_new = (j / extent);
+            int oldX = (int)(floor(x / coef));
+            int oldY = (int)(floor(y / coef));
 
-            int i_old = (int)(floor(i / extent));
-            int j_old = (int)(floor(j / extent));
+            double deltaX = xDouble - oldX;
+            double deltaY = yDouble - oldY;
 
-            double deltaX = i_new - i_old;
-            double deltaY = j_new - j_old;
+            //соседние пиксели
+            PIXELDATA pixel1 = data[oldX * Head.width + oldY];
+            PIXELDATA pixel2 = data[(oldX + 1) * Head.width + oldY];
+            PIXELDATA pixel3 = data[(oldX + 1) * Head.width + oldY + 1];
+            PIXELDATA pixel4 = data[oldX * Head.width + (oldY + 1)];
 
-            PIXELDATA UpLeft = InitialMatrix[i_old][j_old];
-            PIXELDATA DownLeft = InitialMatrix[i_old + 1][j_old];
-            PIXELDATA DownRight = InitialMatrix[i_old + 1][j_old + 1];
-            PIXELDATA UpRight = InitialMatrix[i_old][j_old + 1];
+            int R = (int)(round(pixel1.red * (1 - deltaX) * (1 - deltaY) +
+                pixel2.red * deltaX * (1 - deltaY) +
+                pixel4.red * (1 - deltaX) * deltaY +
+                pixel3.red * deltaX * deltaY));
 
-            int Red = (int)(round(UpLeft.red * (1 - deltaX) * (1 - deltaY) +
-                DownLeft.red * deltaX * (1 - deltaY) +
-                UpRight.red * (1 - deltaX) * deltaY +
-                DownRight.red * deltaX * deltaY));
+            int G = (int)(round(pixel1.green * (1 - deltaX) * (1 - deltaY) +
+                pixel2.green * deltaX * (1 - deltaY) +
+                pixel4.green * (1 - deltaX) * deltaY +
+                pixel3.green * deltaX * deltaY));
 
-            int Green = (int)(round(UpLeft.green * (1 - deltaX) * (1 - deltaY) +
-                DownLeft.green * deltaX * (1 - deltaY) +
-                UpRight.green * (1 - deltaX) * deltaY +
-                DownRight.green * deltaX * deltaY));
-
-            int Blue = (int)(round(UpLeft.blue * (1 - deltaX) * (1 - deltaY) +
-                DownLeft.blue * deltaX * (1 - deltaY) +
-                UpRight.blue * (1 - deltaX) * deltaY +
-                DownRight.blue) * deltaX * deltaY);
+            int B = (int)(round(pixel1.blue * (1 - deltaX) * (1 - deltaY) +
+                pixel2.blue * deltaX * (1 - deltaY) +
+                pixel4.blue * (1 - deltaX) * deltaY +
+                pixel3.blue * deltaX * deltaY));
 
             PIXELDATA newPixel;
-            newPixel.red = Red;            
-            newPixel.green = Green;
-            newPixel.blue = Blue;
-            ResultMatrix[i][j] = newPixel;
+            newPixel.red = R;
+            newPixel.blue = B;
+            newPixel.green = G;
+            newImage[x * newWidth + y] = newPixel;
         }
     }
-}
-
-
-void Image::WritePixels(PIXELDATA** ResultMatrix, string name2) {
-    ofstream FileOut(name2, ios::out | ios::binary | ios::app);
-    int ZeroBytes = 4 - ((Head.getWidth() * 3) % 4);
-    for (int i = 0; i < Head.getHeight(); i++) {
-        for (int j = 0; j < Head.getWidth(); ++j) {
-            if (!FileOut) cout << "Can't open to write WritePixels 1" << endl;
-            else FileOut.write((char*)&ResultMatrix[i][j], sizeof(PIXELDATA));
-        }
-        for (int k = 0; k < ZeroBytes; k++) {
-            int8_t zero = 0;
-            if (!FileOut) cout << "Can't open to write WritePixels 2" << endl;
-            else FileOut.write((char*)&zero, sizeof(int8_t));
-        }
-    }
-    FileOut.close();
-}
-
-
-void Image::ProcessPixels(int extent, string name1, string name2) {
-    PIXELDATA** InitialMatrix = CreateMatrix(Head.getHeight()/extent, Head.getWidth()/extent);
-    ReadPixels(extent, name1, InitialMatrix);
-    //PIXELDATA** ResultMatrix = CreateMatrix(Head.getHeight(), Head.getWidth());
-    //Interpolation(InitialMatrix, extent, ResultMatrix);
-    //WritePixels(ResultMatrix, name2);
-    WriteInteger(InitialMatrix, name2, extent);
-}
-
-void Image::WriteInteger(PIXELDATA** InitialMatrix, string name2, int extent) {
-
-    ofstream FileOut(name2, ios::out | ios::binary | ios::app);
-    int ZeroBytes = (4 - Head.getWidth() * sizeof(PIXELDATA) % 4) % 4;
-    Head.height *= extent;
-    Head.width *= extent;
-    for (size_t i = 0; i < Head.height; i++)
-    {
-        //for (int m = 0; m < extent; m++) {
-            for (size_t j = 0; j < Head.width; j++)
-            {
-                if (!FileOut) cout << "Can't open to write. WriteInteger1";
-                else FileOut.write((char*)&InitialMatrix[i / extent][j /extent], sizeof(PIXELDATA));
-
-                for (size_t k = 0; k < ZeroBytes; k++)
-                {
-                    long zero = 0;
-                    if (!FileOut) cout << "Can't open to write WriteInteger2" << endl;
-                    else FileOut.write((char*)&ZeroBytes, sizeof(int8_t));
-                }
-            }
-        //}
-    }
-
-    FileOut.close();
+    Head.width = newWidth;
+    Head.height = newHeight;
+    data = newImage;
 }

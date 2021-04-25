@@ -35,6 +35,7 @@ void BMPHEAD::ProcessHead(double extent, string name1, string name2) {
     ofstream FileOut(name2, ios::out | ios::binary);
     if (!FileIn.is_open()) cout << "Can't open to read ProcessHead 1" << endl;
     else {
+        
         FileIn.read((char*)&id, sizeof(id));
         FileIn.read((char*)&filesize, sizeof(filesize));
         FileIn.read((char*)&reserved, sizeof(reserved));
@@ -53,7 +54,7 @@ void BMPHEAD::ProcessHead(double extent, string name1, string name2) {
     }
     width *= extent;
     height *= extent;
-    filesize = 54 + (height * width) * 3 + (4 - width % 4) * width;
+    //filesize = 54 + (height * width) * 3 + (4 - width % 4) * width;
 
     if (!FileOut) cout << "Can't open to write ProcessHead 2" << endl;
     else {

@@ -5,7 +5,7 @@
 #include <iostream>
 using namespace std;
 
-#pragma pack(push, 1)
+
 class BMPHEAD {
 public:
     int8_t id[2];            // ַאגזהט הג³ כ³עונט 'B' ³ 'M'
@@ -30,18 +30,19 @@ public:
     void ProcessHead(double extent, string name1, string name2);
     BMPHEAD();
 };
-#pragma pack(pop)
 
 
-#pragma pack(push, 1)
 struct PIXELDATA {
     uint8_t red;
     uint8_t green;
     uint8_t blue;
-    PIXELDATA() {
-        red = 0;
-        green = 0;
-        blue = 0;
+    PIXELDATA(){
+        uint8_t red = 0, green = 0, blue = 0;
+    }
+    PIXELDATA(uint8_t red, uint8_t green, uint8_t blue) {
+        this->red = red;
+        this->green = green;
+        this->blue = blue;
     }
 };
-#pragma pack(pop)
+
