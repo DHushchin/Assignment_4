@@ -96,3 +96,5 @@ BMPHEAD::BMPHEAD() {
     biClrUsed = 0;       // Для індексованих зображень, можна поставити 0L
     biClrImportant = 0;  // Те саме
 }
+
+

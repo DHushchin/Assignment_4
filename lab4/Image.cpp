@@ -6,13 +6,13 @@
 using namespace std;
 
 
-
-void Image::ResizeImage(string name1, string name2, double extent) {
+void Image::ResizeImage(string name1, string name2, int extent) {
     Head.ProcessHead(extent, name1, name2);
     ProcessPixels(extent, name1, name2);
 }
 
-PIXELDATA** Image::CreateMatrix(int32_t height, int32_t width) {
+
+PIXELDATA** Image::CreateMatrix(int height, int width) {
     PIXELDATA** Matrix = new PIXELDATA*[height];
     for (int i = 0; i < height; i++) {
         Matrix[i] = new PIXELDATA[width];
@@ -21,10 +21,10 @@ PIXELDATA** Image::CreateMatrix(int32_t height, int32_t width) {
 }
 
 
-void Image::ReadPixels(double extent, string name1, PIXELDATA** InitialMatrix) {
+void Image::ReadPixels(int extent, string name1, PIXELDATA** InitialMatrix) {
 
     ifstream FileIn(name1, ios::in | ios::binary);
-    int ZeroBytes = (4 - ((Head.getWidth() * 3) % 4))%4;
+    int ZeroBytes = (4 - Head.getWidth() * sizeof(PIXELDATA) % 4) % 4;
     FileIn.seekg(54, ios::beg);
     for (int i = 0; i < Head.getHeight(); i++) {
         for (int j = 0; j < Head.getWidth(); j++) {
@@ -39,10 +39,10 @@ void Image::ReadPixels(double extent, string name1, PIXELDATA** InitialMatrix) {
 }
 
 
-PIXELDATA** Image::Interpolation(PIXELDATA** InitialMatrix, double extent) {
-    PIXELDATA** ResultMatrix = CreateMatrix(Head.getHeight(), Head.getWidth());
+void Image::Interpolation(PIXELDATA** InitialMatrix, int extent, PIXELDATA** ResultMatrix) {
 
-    for (int i = 0; i < Head.getWidth() - 2; i++) {
+
+    for (int i = 0; i < Head.getWidth() - 1; i++) {
         for (int j = 0; j < Head.getHeight() - 1; j++) {
 
             double i_new = (i / extent);
@@ -59,29 +59,28 @@ PIXELDATA** Image::Interpolation(PIXELDATA** InitialMatrix, double extent) {
             PIXELDATA DownRight = InitialMatrix[i_old + 1][j_old + 1];
             PIXELDATA UpRight = InitialMatrix[i_old][j_old + 1];
 
-            int Red = (int)(round(UpLeft.getRed() * (1 - deltaX) * (1 - deltaY) +
-                DownLeft.getRed() * deltaX * (1 - deltaY) +
-                UpRight.getRed() * (1 - deltaX) * deltaY +
-                DownRight.getRed() * deltaX * deltaY));
+            int Red = (int)(round(UpLeft.red * (1 - deltaX) * (1 - deltaY) +
+                DownLeft.red * deltaX * (1 - deltaY) +
+                UpRight.red * (1 - deltaX) * deltaY +
+                DownRight.red * deltaX * deltaY));
 
-            int Green = (int)(round(UpLeft.getGreen() * (1 - deltaX) * (1 - deltaY) +
-                DownLeft.getGreen() * deltaX * (1 - deltaY) +
-                UpRight.getGreen() * (1 - deltaX) * deltaY +
-                DownRight.getGreen() * deltaX * deltaY));
+            int Green = (int)(round(UpLeft.green * (1 - deltaX) * (1 - deltaY) +
+                DownLeft.green * deltaX * (1 - deltaY) +
+                UpRight.green * (1 - deltaX) * deltaY +
+                DownRight.green * deltaX * deltaY));
 
-            int Blue = (int)(round(UpLeft.getBlue() * (1 - deltaX) * (1 - deltaY) +
-                DownLeft.getBlue() * deltaX * (1 - deltaY) +
-                UpRight.getBlue() * (1 - deltaX) * deltaY +
-                DownRight.getBlue() * deltaX * deltaY));
+            int Blue = (int)(round(UpLeft.blue * (1 - deltaX) * (1 - deltaY) +
+                DownLeft.blue * deltaX * (1 - deltaY) +
+                UpRight.blue * (1 - deltaX) * deltaY +
+                DownRight.blue) * deltaX * deltaY);
 
             PIXELDATA newPixel;
-            newPixel.setRed(Red);            
-            newPixel.setGreen(Green);
-            newPixel.setBlue(Blue);
+            newPixel.red = Red;            
+            newPixel.green = Green;
+            newPixel.blue = Blue;
             ResultMatrix[i][j] = newPixel;
         }
     }
-    return ResultMatrix;
 }
 
 
@@ -103,9 +102,38 @@ void Image::WritePixels(PIXELDATA** ResultMatrix, string name2) {
 }
 
 
-void Image::ProcessPixels(double extent, string name1, string name2) {
+void Image::ProcessPixels(int extent, string name1, string name2) {
     PIXELDATA** InitialMatrix = CreateMatrix(Head.getHeight()/extent, Head.getWidth()/extent);
     ReadPixels(extent, name1, InitialMatrix);
-    PIXELDATA** ResultMatrix = Interpolation(InitialMatrix, extent);
-    WritePixels(ResultMatrix, name2);
+    //PIXELDATA** ResultMatrix = CreateMatrix(Head.getHeight(), Head.getWidth());
+    //Interpolation(InitialMatrix, extent, ResultMatrix);
+    //WritePixels(ResultMatrix, name2);
+    WriteInteger(InitialMatrix, name2, extent);
+}
+
+void Image::WriteInteger(PIXELDATA** InitialMatrix, string name2, int extent) {
+
+    ofstream FileOut(name2, ios::out | ios::binary | ios::app);
+    int ZeroBytes = (4 - Head.getWidth() * sizeof(PIXELDATA) % 4) % 4;
+    Head.height *= extent;
+    Head.width *= extent;
+    for (size_t i = 0; i < Head.height; i++)
+    {
+        //for (int m = 0; m < extent; m++) {
+            for (size_t j = 0; j < Head.width; j++)
+            {
+                if (!FileOut) cout << "Can't open to write. WriteInteger1";
+                else FileOut.write((char*)&InitialMatrix[i / extent][j /extent], sizeof(PIXELDATA));
+
+                for (size_t k = 0; k < ZeroBytes; k++)
+                {
+                    long zero = 0;
+                    if (!FileOut) cout << "Can't open to write WriteInteger2" << endl;
+                    else FileOut.write((char*)&ZeroBytes, sizeof(int8_t));
+                }
+            }
+        //}
+    }
+
+    FileOut.close();
 }

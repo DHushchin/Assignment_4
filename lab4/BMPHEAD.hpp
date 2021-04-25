@@ -26,11 +26,22 @@ public:
 public:
     int32_t getWidth();
     int32_t getHeight();
-    void setWidth(double extent);
-    void setHeight(double extent);
-    void setFilesize(int ZeroBytes);
     BMPHEAD(const BMPHEAD& h);
     void ProcessHead(double extent, string name1, string name2);
     BMPHEAD();
+};
+#pragma pack(pop)
+
+
+#pragma pack(push, 1)
+struct PIXELDATA {
+    uint8_t red;
+    uint8_t green;
+    uint8_t blue;
+    PIXELDATA() {
+        red = 0;
+        green = 0;
+        blue = 0;
+    }
 };
 #pragma pack(pop)

@@ -1,7 +1,6 @@
 #pragma once
 #include <fstream>
 #include "BMPHEAD.hpp"
-#include "PIXELDATA.hpp"
 
 using namespace std;
 
@@ -10,10 +9,11 @@ private:
     BMPHEAD Head;
     PIXELDATA Color;
 public:      
-    void ResizeImage(string name1, string name2, double extent);
-    PIXELDATA** CreateMatrix(int32_t height, int32_t width); 
-    void ProcessPixels(double extent, string name1, string name2);
-    PIXELDATA** Interpolation(PIXELDATA** InitialMatrix, double extent);
+    void ResizeImage(string name1, string name2, int extent);
+    PIXELDATA** CreateMatrix(int height, int width); 
+    void ProcessPixels(int extent, string name1, string name2);
+    void Interpolation(PIXELDATA** InitialMatrix, int extent, PIXELDATA** ResultMatrix);
     void WritePixels(PIXELDATA** ResultMatrix, string name2);
-    void ReadPixels(double extent, string name1, PIXELDATA** InitialMatrix);
+    void ReadPixels(int extent, string name1, PIXELDATA** InitialMatrix);
+    void WriteInteger(PIXELDATA** InitialMatrix, string name2, int extent);
 };
