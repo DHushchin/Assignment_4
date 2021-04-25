@@ -24,15 +24,15 @@ PIXELDATA** Image::CreateMatrix(int32_t height, int32_t width) {
 void Image::ReadPixels(double extent, string name1, PIXELDATA** InitialMatrix) {
 
     ifstream FileIn(name1, ios::in | ios::binary);
-    int ZeroBytes = 4 - ((Head.getWidth() * 3) % 4);
+    int ZeroBytes = (4 - ((Head.getWidth() * 3) % 4))%4;
     FileIn.seekg(54, ios::beg);
-    for (int i = 0; i < Head.getHeight()/extent; i++) {
-        for (int j = 0; j < Head.getWidth()/extent; j++) {
+    for (int i = 0; i < Head.getHeight(); i++) {
+        for (int j = 0; j < Head.getWidth(); j++) {
             if (!FileIn.is_open()) cout << "Can't open to read ReadPixels 1" << endl;
             else FileIn.read((char*)&InitialMatrix[i][j], sizeof(PIXELDATA));
         }
         long tmp;
-        if (!FileIn) cout << "Can't open to read ReadPixels 2" << endl;
+        if (!FileIn.is_open()) cout << "Can't open to read ReadPixels 2" << endl;
         else FileIn.read((char*)&tmp, ZeroBytes);
     }
     FileIn.close();
@@ -42,7 +42,7 @@ void Image::ReadPixels(double extent, string name1, PIXELDATA** InitialMatrix) {
 PIXELDATA** Image::Interpolation(PIXELDATA** InitialMatrix, double extent) {
     PIXELDATA** ResultMatrix = CreateMatrix(Head.getHeight(), Head.getWidth());
 
-    for (int i = 0; i < Head.getWidth(); i++) {
+    for (int i = 0; i < Head.getWidth() - 2; i++) {
         for (int j = 0; j < Head.getHeight() - 1; j++) {
 
             double i_new = (i / extent);
@@ -54,10 +54,10 @@ PIXELDATA** Image::Interpolation(PIXELDATA** InitialMatrix, double extent) {
             double deltaX = i_new - i_old;
             double deltaY = j_new - j_old;
 
-            PIXELDATA UpLeft = InitialMatrix[i_old * Head.getWidth()][j_old];
-            PIXELDATA DownLeft = InitialMatrix[(i_old + 1) * Head.getWidth()][j_old];
-            PIXELDATA DownRight = InitialMatrix[(i_old + 1) * Head.getWidth()][j_old + 1];
-            PIXELDATA UpRight = InitialMatrix[i_old * Head.getWidth()][j_old + 1];
+            PIXELDATA UpLeft = InitialMatrix[i_old][j_old];
+            PIXELDATA DownLeft = InitialMatrix[i_old + 1][j_old];
+            PIXELDATA DownRight = InitialMatrix[i_old + 1][j_old + 1];
+            PIXELDATA UpRight = InitialMatrix[i_old][j_old + 1];
 
             int Red = (int)(round(UpLeft.getRed() * (1 - deltaX) * (1 - deltaY) +
                 DownLeft.getRed() * deltaX * (1 - deltaY) +
@@ -78,7 +78,7 @@ PIXELDATA** Image::Interpolation(PIXELDATA** InitialMatrix, double extent) {
             newPixel.setRed(Red);            
             newPixel.setGreen(Green);
             newPixel.setBlue(Blue);
-            ResultMatrix[i * Head.getWidth()][j] = newPixel;
+            ResultMatrix[i][j] = newPixel;
         }
     }
     return ResultMatrix;
