@@ -33,7 +33,7 @@ void Image::ReadPixels(string address, int oldHeight, int oldWidth) {
     file.seekg(54, ios::beg);
 
     long proceeded_pixels = 0;
-    int delta = 4 - ((oldWidth * 3) % 4);
+    int ZeroBytes = 4 - ((oldWidth * 3) % 4);
     for (int counter = 0; counter < oldHeight; ++counter) {
         for (int counter = 0; counter < oldWidth; ++counter) {
             PIXELDATA tmp;
@@ -42,7 +42,7 @@ void Image::ReadPixels(string address, int oldHeight, int oldWidth) {
         }
 
         long tmp;
-        file.read((char*)&tmp, delta);
+        file.read((char*)&tmp, ZeroBytes);
     }
 
     file.close();
@@ -50,7 +50,7 @@ void Image::ReadPixels(string address, int oldHeight, int oldWidth) {
 
 
 void Image::WritePixels(const string& address, bool negative) {
-    int delta = 4 - ((Head.width * 3) % 4);
+    int ZeroBytes = 4 - ((Head.width * 3) % 4);
     ofstream file(address, ios::out | ios::binary | ios::app);
     if (negative) ReverseArray();
     long proceeded_pixels = 0;
@@ -59,7 +59,7 @@ void Image::WritePixels(const string& address, bool negative) {
             PIXELDATA tmp = Color[proceeded_pixels++];
             file.write((char*)&tmp, sizeof(PIXELDATA));
         }
-        for (int j = 0; j < delta; j++) {
+        for (int j = 0; j < ZeroBytes; j++) {
             uint8_t zero = 0x00;
             file.write((char*)&zero, sizeof(uint8_t));
         }
