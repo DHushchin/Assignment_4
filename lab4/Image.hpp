@@ -4,7 +4,7 @@
 #include <string>
 #include <fstream>
 #include <iostream>
-
+#include <vector>
 using namespace std;
 
 class BMPHEAD {
@@ -48,10 +48,11 @@ class Image {
 private:
     BMPHEAD Head;
     PIXELDATA* Color;
-public:      
+public:
     void ResizeImage(string name1, string name2, double extent);
-    void ProcessPixels(double extent, string name1, string name2);
+    void ProcessPixels(double extent, string name1, string name2, bool negative);
     void ReadPixels(string address, int oldHeight, int oldWidth);
-    void WritePixels(const string& address) const;
+    void WritePixels(const string& address, bool negative);
     void Interpolation(double coef, int oldHeight, int oldWidth);
+    void ReverseArray();
 };

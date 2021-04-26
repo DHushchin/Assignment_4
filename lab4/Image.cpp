@@ -6,17 +6,22 @@ using namespace std;
 
 
 void Image::ResizeImage(string name1, string name2, double extent) {
+    bool negative = false; 
+    if (extent < 0) {
+        extent *= -1;
+        negative = true;
+    }
     Head.ProcessHead(extent, name1, name2);
-    ProcessPixels(extent, name1, name2);
+    ProcessPixels(extent, name1, name2, negative);
 }
 
 
-void Image::ProcessPixels(double extent, string name1, string name2) {
-    int oldHeight = (int) Head.height / extent;
-    int oldWidth = (int) Head.width / extent;
+void Image::ProcessPixels(double extent, string name1, string name2, bool negative) {
+    int oldHeight = (int)Head.height / extent;
+    int oldWidth = (int)Head.width / extent;
     ReadPixels(name1, oldHeight, oldWidth);
     Interpolation(extent, oldHeight, oldWidth);
-    WritePixels(name2);
+    WritePixels(name2, negative);
 }
 
 
@@ -44,9 +49,10 @@ void Image::ReadPixels(string address, int oldHeight, int oldWidth) {
 }
 
 
-void Image::WritePixels(const string& address) const {
+void Image::WritePixels(const string& address, bool negative) {
     int delta = 4 - ((Head.width * 3) % 4);
     ofstream file(address, ios::out | ios::binary | ios::app);
+    if (negative) ReverseArray();
     long proceeded_pixels = 0;
     for (int i = 0; i < Head.height; i++) {
         for (int counter = 0; counter < Head.width; ++counter) {
@@ -80,7 +86,7 @@ void Image::Interpolation(double extent, int oldHeight, int oldWidth) {
             PIXELDATA color11 = Color[X_Int * oldWidth + (Y_Int + 1)];
             int Red = (int)(round(color00.red * (1 - dx) * (1 - dy) + color10.red * dx * (1 - dy) + color11.red * (1 - dx) * dy + color01.red * dx * dy));
             int Green = (int)(round(color00.green * (1 - dx) * (1 - dy) + color10.green * dx * (1 - dy) + color11.green * (1 - dx) * dy + color01.green * dx * dy));
-            int Blue = (int)(round(color00.blue * (1 - dx) * (1 - dy) + color10.blue * dx * (1 - dy) + color11.blue * (1 - dx) * dy +  color01.blue * dx * dy));
+            int Blue = (int)(round(color00.blue * (1 - dx) * (1 - dy) + color10.blue * dx * (1 - dy) + color11.blue * (1 - dx) * dy + color01.blue * dx * dy));
             PIXELDATA NewColor;
             NewColor.red = Red;
             NewColor.blue = Blue;
@@ -114,24 +120,24 @@ BMPHEAD::BMPHEAD() {
     biClrImportant = 0;
 }
 
-BMPHEAD::BMPHEAD(const BMPHEAD& h) {
-    id[0] = h.id[0];
-    id[1] = h.id[1];
-    filesize = h.filesize;
-    reserved[0] = h.reserved[0];
-    reserved[1] = h.reserved[1];
-    headersize = h.headersize;
-    infoSize = h.infoSize;
-    width = h.width;
-    height = h.height;
-    biPlanes = h.biPlanes;
-    bits = h.bits;
-    biCompression = h.biCompression;
-    biSizeImage = h.biSizeImage;
-    biXPelsPerMeter = h.biXPelsPerMeter;
-    biYPelsPerMeter = h.biYPelsPerMeter;
-    biClrUsed = h.biClrUsed;
-    biClrImportant = h.biClrImportant;
+BMPHEAD::BMPHEAD(const BMPHEAD& other) {
+    id[0] = other.id[0];
+    id[1] = other.id[1];
+    filesize = other.filesize;
+    reserved[0] = other.reserved[0];
+    reserved[1] = other.reserved[1];
+    headersize = other.headersize;
+    infoSize = other.infoSize;
+    width = other.width;
+    height = other.height;
+    biPlanes = other.biPlanes;
+    bits = other.bits;
+    biCompression = other.biCompression;
+    biSizeImage = other.biSizeImage;
+    biXPelsPerMeter = other.biXPelsPerMeter;
+    biYPelsPerMeter = other.biYPelsPerMeter;
+    biClrUsed = other.biClrUsed;
+    biClrImportant = other.biClrImportant;
 }
 
 void BMPHEAD::ProcessHead(double extent, string name1, string name2) {
@@ -181,3 +187,30 @@ void BMPHEAD::ProcessHead(double extent, string name1, string name2) {
     FileIn.close();
     FileOut.close();
 }
+
+void Image::ReverseArray() {
+    long proceeded_pixels = 0;
+    vector <PIXELDATA> vect;
+
+    for (int i = 0; i < Head.height; i++) {
+        for (int j = 0; j < Head.width; ++j) {
+            vect.push_back(Color[proceeded_pixels++]);
+        }
+    }
+
+    for (int i = 0; i < vect.size(); i++) {
+        PIXELDATA tmp = vect[i];
+        vect[i] = vect[vect.size() - i - 1];
+        vect[vect.size() - i - 1] = tmp;
+    }
+
+    proceeded_pixels = 0;
+    for (int i = 0; i < Head.height; i++) {
+        for (int j = 0; j < Head.width; ++j) {
+            Color[proceeded_pixels] = vect[vect.size() - 1 - proceeded_pixels];
+            proceeded_pixels++;
+        }
+    }
+}
+
+

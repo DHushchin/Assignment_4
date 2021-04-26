@@ -2,12 +2,9 @@
 
 using namespace std;
 
-int main() {
+int main(int argc, char* argv[]) {
     Image image;
-    string name1 = "bmp.bmp";
-    string name2 = "new.bmp";
-    double ext = 1.89;
-    image.ResizeImage(name1, name2, ext);
+    image.ResizeImage(argv[1], argv[2], stod(argv[3]));
     system("pause");
     return 0;
 }
